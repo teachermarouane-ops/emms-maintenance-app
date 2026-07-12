@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMMS — Engine Maintenance Management System</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+body { display: flex; height: 100vh; background: #f0f2f5; }
+
+/* SIDEBAR */
+.sidebar { width: 220px; background: #1a1a2e; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-header { padding: 20px 16px; border-bottom: 1px solid #2d2d4e; }
+.sidebar-header h2 { font-size: 16px; font-weight: 600; color: #00d4ff; }
+.sidebar-header p { font-size: 11px; color: #888; margin-top: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; color: #aaa; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
+.nav-item:hover { background: #2d2d4e; color: white; }
+.nav-item.active { background: #16213e; color: #00d4ff; border-left-color: #00d4ff; }
+.nav-item span { font-size: 18px; }
+
+/* MAIN */
+.main { flex: 1; overflow-y: auto; padding: 24px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 20px; }
+.page-header h1 { font-size: 22px; font-weight: 600; color: #1a1a2e; }
+.page-header p { font-size: 13px; color: #888; margin-top: 4px; }
+
+/* KPI CARDS */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.kpi-card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.kpi-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+.kpi-value { font-size: 28px; font-weight: 700; }
+.kpi-card.total .kpi-value { color: #1a1a2e; }
+.kpi-card.danger .kpi-value { color: #e74c3c; }
+.kpi-card.warning .kpi-value { color: #f39c12; }
+.kpi-card.success .kpi-value { color: #2ecc71; }
+
+/* TABLE */
+.card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
+.card-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 10px; color: #888; font-size: 12px; font-weight: 500; border-bottom: 1px solid #f0f2f5; }
+td { padding: 10px 10px; border-bottom: 1px solid #f8f8f8; color: #333; }
+tr:last-child td { border-bottom: none; }
+
+/* BADGES */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge.ok { background: #eafaf1; color: #2ecc71; }
+.badge.soon { background: #fef9e7; color: #f39c12; }
+.badge.overdue { background: #fdedec; color: #e74c3c; }
+.badge.low { background: #fef9e7; color: #f39c12; }
+.badge.critical { background: #fdedec; color: #e74c3c; }
+.badge.good { background: #eafaf1; color: #2ecc71; }
+
+/* FORMS */
+.form-group { margin-bottom: 12px; }
+.form-group label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+.form-group input, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; outline: none; }
+.form-group input:focus, .form-group textarea:focus { border-color: #00d4ff; }
+.form-group textarea { height: 80px; resize: none; }
+.btn { background: #1a1a2e; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+.btn:hover { background: #00d4ff; }
+
+/* RESULT BOX */
+.result-box { border-radius: 8px; padding: 14px; margin-top: 14px; border-left: 4px solid; }
+.result-box.normal { background: #eafaf1; border-color: #2ecc71; }
+.result-box.later { background: #fef9e7; border-color: #f39c12; }
+.result-box.urgent { background: #fdedec; border-color: #e74c3c; }
+.result-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.result-title.normal { color: #2ecc71; }
+.result-title.later { color: #f39c12; }
+.result-title.urgent { color: #e74c3c; }
+.result-detail { font-size: 12px; color: #555; line-height: 1.6; }
+
+/* DOC RESULTS */
+.doc-result { background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 3px solid #00d4ff; }
+.doc-meta { font-size: 11px; color: #888; margin-bottom: 4px; }
+.doc-text { font-size: 13px; color: #333; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2>🏭 EMMS</h2>
+    <p>Maintenance Management</p>
+  </div>
+  <div class="nav-item active" onclick="showPage('home', this)">
+    <span>📊</span> Home
+  </div>
+  <div class="nav-item" onclick="showPage('schedule', this)">
+    <span>📅</span> Schedule
+  </div>
+  <div class="nav-item" onclick="showPage('parts', this)">
+    <span>🔩</span> Spare Parts
+  </div>
+  <div class="nav-item" onclick="showPage('archive', this)">
+    <span>📋</span> Archive
+  </div>
+  <div class="nav-item" onclick="showPage('docs', this)">
+    <span>📄</span> Documentation
+  </div>
+  <div class="nav-item" onclick="showPage('anomaly', this)">
+    <span>🧠</span> Anomaly Detection
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="home">
+    <div class="page-header">
+      <h1>Fleet Overview</h1>
+      <p>Real-time status of all 44 industrial engines</p>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card total">
+        <div class="kpi-label">Total Engines</div>
+        <div class="kpi-value">44</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">Overdue</div>
+        <div class="kpi-value">5</div>
+      </div>
+      <div class="kpi-card warning">
+        <div class="kpi-label">Coming Soon</div>
+        <div class="kpi-value">7</div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-label">OK</div>
+        <div class="kpi-value">32</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Engine Status by Category</div>
+      <table>
+        <tr><th>Category</th><th>Total</th><th>OK</th><th>Soon</th><th>Overdue</th></tr>
+        <tr><td>Groupe Demarrage</td><td>18</td><td>13</td><td>3</td><td>2</td></tr>
+        <tr><td>Groupe Clim</td><td>10</td><td>8</td><td>1</td><td>1</td></tr>
+        <tr><td>Groupe Electrogene</td><td>8</td><td>6</td><td>2</td><td>0</td></tr>
+        <tr><td>Groupe Hydraulique</td><td>8</td><td>5</td><td>1</td><td>2</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SCHEDULE PAGE -->
+  <div class="page" id="schedule">
+    <div class="page-header">
+      <h1>Maintenance Schedule</h1>
+      <p>Days since last maintenance and current status per engine</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Engine Maintenance Status</div>
+      <table>
+        <tr><th>Engine ID</th><th>Category</th><th>Days Since Maintenance</th><th>Hours Used</th><th>Maintenance Type</th><th>Status</th></tr>
+        <tr><td>ENG001</td><td>Groupe Demarrage</td><td>127</td><td>64</td><td>6M</td><td><span class="badge overdue">Overdue</span></td></tr>
+        <tr><td>ENG002</td><td>Groupe Demarrage</td><td>114</td><td>239</td><td>6M</td><td><span class="badge soon">Soon</span></td></tr>
+        <tr><td>ENG003</td><td>Groupe Clim</td><td>118</td><td>239</td><td>6M</td><td><span class="badge soon">Soon</span></td></tr>
+        <tr><td>ENG004</td><td>Groupe Clim</td><td>65</td><td>224</td><td>3M</td><td><span class="badge ok">OK</span></td></tr>
+        <tr><td>ENG005</td><td>Groupe Demarrage</td><td>66</td><td>239</td><td>3M</td><td><span class="badge ok">OK</span></td></tr>
+        <tr><td>ENG006</td><td>Groupe Demarrage</td><td>69</td><td>100</td><td>3M</td><td><span class="badge ok">OK</span></td></tr>
+        <tr><td>ENG007</td><td>Groupe Demarrage</td><td>92</td><td>157</td><td>3M</td><td><span class="badge soon">Soon</span></td></tr>
+        <tr><td>ENG008</td><td>Groupe Demarrage</td><td>99</td><td>104</td><td>6M</td><td><span class="badge soon">Soon</span></td></tr>
+        <tr><td>ENG009</td><td>Groupe Demarrage</td><td>123</td><td>293</td><td>6M</td><td><span class="badge overdue">Overdue</span></td></tr>
+        <tr><td>ENG010</td><td>Groupe Demarrage</td><td>45</td><td>180</td><td>3M</td><td><span class="badge ok">OK</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SPARE PARTS PAGE -->
+  <div class="page" id="parts">
+    <div class="page-header">
+      <h1>Spare Parts Inventory</h1>
+      <p>Current stock levels and availability for maintenance</p>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card total">
+        <div class="kpi-label">Total Part Types</div>
+        <div class="kpi-value">8</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">Critical Stock</div>
+        <div class="kpi-value">2</div>
+      </div>
+      <div class="kpi-card warning">
+        <div class="kpi-label">Low Stock</div>
+        <div class="kpi-value">1</div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-label">OK Stock</div>
+        <div class="kpi-value">5</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Parts Inventory</div>
+      <table>
+        <tr><th>Part Name</th><th>Reference</th><th>In Stock</th><th>Minimum Required</th><th>Status</th></tr>
+        <tr><td>Oil Filter</td><td>OF-2234</td><td>15</td><td>5</td><td><span class="badge good">OK</span></td></tr>
+        <tr><td>Drive Belt</td><td>6PK1750</td><td>2</td><td>5</td><td><span class="badge low">Low Stock</span></td></tr>
+        <tr><td>Battery 12V</td><td>VARTA 100Ah</td><td>8</td><td>3</td><td><span class="badge good">OK</span></td></tr>
+        <tr><td>Air Filter</td><td>AF-1190</td><td>0</td><td>5</td><td><span class="badge critical">Critical</span></td></tr>
+        <tr><td>Coolant</td><td>GLACELF AUTO</td><td>12</td><td>4</td><td><span class="badge good">OK</span></td></tr>
+        <tr><td>Oil Filter Clim</td><td>OF-1122</td><td>6</td><td>3</td><td><span class="badge good">OK</span></td></tr>
+        <tr><td>Belt Clim</td><td>4PK1250</td><td>1</td><td>3</td><td><span class="badge critical">Critical</span></td></tr>
+        <tr><td>Oil Filter Hydraulique</td><td>OF-4456</td><td>9</td><td>4</td><td><span class="badge good">OK</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ARCHIVE PAGE -->
+  <div class="page" id="archive">
+    <div class="page-header">
+      <h1>Maintenance Archive</h1>
+      <p>History of all interventions — avoids unnecessary part replacement</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Intervention History</div>
+      <table>
+        <tr><th>Date</th><th>Engine</th><th>Category</th><th>Parts Replaced</th><th>Technician Note</th><th>Next Due</th></tr>
+        <tr><td>2026-05-12</td><td>ENG001</td><td>Groupe Demarrage</td><td>Oil Filter OF-2234, Belt 6PK1750</td><td>Routine 6M service</td><td>2026-11-12</td></tr>
+        <tr><td>2026-05-13</td><td>ENG007</td><td>Groupe Demarrage</td><td>Oil Filter OF-2234</td><td>Oil leak detected</td><td>2026-08-13</td></tr>
+        <tr><td>2026-05-15</td><td>ENG012</td><td>Groupe Clim</td><td>Battery VARTA 12V</td><td>Battery dead</td><td>2027-05-15</td></tr>
+        <tr><td>2026-05-18</td><td>ENG023</td><td>Groupe Electrogene</td><td>Belt 8PK2000, Air Filter</td><td>Belt snapped</td><td>2026-11-18</td></tr>
+        <tr><td>2026-06-01</td><td>ENG031</td><td>Groupe Hydraulique</td><td>Coolant GLACELF, Air Filter AF-1190</td><td>Coolant critically low</td><td>2026-12-01</td></tr>
+        <tr><td>2026-06-10</td><td>ENG009</td><td>Groupe Demarrage</td><td>Oil Filter OF-2234, Coolant</td><td>Routine 6M service</td><td>2026-12-10</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- DOCUMENTATION PAGE -->
+  <div class="page" id="docs">
+    <div class="page-header">
+      <h1>Documentation Search</h1>
+      <p>Ask any technical question about your engines in English or French</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Search Technical Manual</div>
+      <div class="form-group">
+        <label>Your Question (EN or FR)</label>
+        <input type="text" id="docQuery" placeholder="e.g. What oil does ENG007 use? / Quelle courroie pour groupe clim?" />
+      </div>
+      <button class="btn" onclick="searchDocs()">🔍 Search Documentation</button>
+      <div id="docResults"></div>
+    </div>
+  </div>
+
+  <!-- ANOMALY DETECTION PAGE -->
+  <div class="page" id="anomaly">
+    <div class="page-header">
+      <h1>Anomaly Detection</h1>
+      <p>NLP-powered classifier — type the technician's morning observation</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Analyze Technician Statement</div>
+      <div class="form-group">
+        <label>Engine ID</label>
+        <input type="text" id="engineId" placeholder="e.g. ENG007" />
+      </div>
+      <div class="form-group">
+        <label>Technician Statement</label>
+        <textarea id="statement" placeholder="e.g. oil leak detected under the engine..."></textarea>
+      </div>
+      <button class="btn" onclick="analyzeStatement()">🔍 Analyze Statement</button>
+      <div id="anomalyResult"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Navigation
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+// Documentation search
+const docs = [
+  { category: 'Engine Specification', lang: 'EN', content: 'ENG001 to ENG010 are Groupe Demarrage engines. They require 6.5 liters of 15W-40 engine oil. Oil filter reference: OF-2234. Oil drain interval: every 250 hours or 3 months.' },
+  { category: 'Engine Specification', lang: 'FR', content: 'Les moteurs ENG001 à ENG010 sont des groupes démarreurs. Ils nécessitent 6.5 litres d\'huile moteur 15W-40. Référence filtre à huile: OF-2234.' },
+  { category: 'Engine Specification', lang: 'EN', content: 'ENG011 to ENG020 are Groupe Clim engines. They require 4.5 liters of 10W-30 engine oil. Oil filter reference: OF-1122.' },
+  { category: 'Spare Parts', lang: 'EN', content: 'Groupe Demarrage engines use belt reference 6PK1750. Belt replacement interval: every 500 hours or 6 months. Belt tension should be 50-60 Nm.' },
+  { category: 'Spare Parts', lang: 'FR', content: 'Les groupes climatiseurs utilisent la courroie référence 4PK1250. Intervalle de remplacement: toutes les 400 heures ou 6 mois.' },
+  { category: 'Spare Parts', lang: 'EN', content: 'Groupe Clim engines use belt reference 4PK1250. Belt replacement interval: every 400 hours or 6 months.' },
+  { category: 'Battery Specification', lang: 'EN', content: 'All Groupe Demarrage engines use battery reference VARTA 12V-100Ah. Battery replacement interval: every 24 months or when voltage drops below 11.5V.' },
+  { category: 'Battery Specification', lang: 'FR', content: 'Les groupes électrogènes utilisent la batterie référence BOSCH 12V-80Ah. Intervalle de remplacement: tous les 24 mois.' },
+  { category: 'Coolant Specification', lang: 'EN', content: 'All Groupe Demarrage engines use coolant type TOTAL GLACELF AUTO SUPRA. Coolant capacity: 8 liters. Change interval: every 12 months.' },
+  { category: 'Maintenance Procedure', lang: 'EN', content: 'Oil change procedure: 1. Warm up engine for 5 minutes. 2. Stop engine and place drain pan. 3. Remove drain plug and drain oil. 4. Replace oil filter OF-2234. 5. Fill with fresh 15W-40 oil.' },
+  { category: 'Maintenance Procedure', lang: 'FR', content: 'Procédure de remplacement courroie: 1. Déconnecter la batterie. 2. Relâcher le tendeur. 3. Retirer l\'ancienne courroie. 4. Installer la nouvelle courroie 4PK1250. 5. Régler la tension à 50-60 Nm.' },
+  { category: 'Safety', lang: 'EN', content: 'Safety warning: Never perform maintenance on a running engine. Always wait 30 minutes after shutdown before opening the coolant cap. Wear protective gloves when handling engine oil.' },
+];
+
+function searchDocs() {
+  const query = document.getElementById('docQuery').value.toLowerCase().trim();
+  if (!query) { alert('Please enter a question!'); return; }
+  
+  const keywords = query.split(' ').filter(w => w.length > 2);
+  const scored = docs.map(doc => {
+    let score = 0;
+    keywords.forEach(kw => { if (doc.content.toLowerCase().includes(kw)) score++; });
+    return { ...doc, score };
+  }).filter(d => d.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+
+  const resultsDiv = document.getElementById('docResults');
+  if (scored.length === 0) {
+    resultsDiv.innerHTML = '<p style="color:#e74c3c; margin-top:12px;">No results found. Try different keywords.</p>';
+    return;
+  }
+
+  resultsDiv.innerHTML = '<div style="margin-top:14px;">' + scored.map((d, i) => `
+    <div class="doc-result">
+      <div class="doc-meta">Result ${i+1} — ${d.category} — ${d.lang === 'EN' ? '🇬🇧' : '🇫🇷'}</div>
+      <div class="doc-text">${d.content}</div>
+    </div>
+  `).join('') + '</div>';
+}
+
+// Anomaly detection
+function analyzeStatement() {
+  const engineId = document.getElementById('engineId').value.trim() || 'UNKNOWN';
+  const statement = document.getElementById('statement').value.trim().toLowerCase();
+  if (!statement) { alert('Please enter a statement!'); return; }
+
+  let prediction, priority, action, cls;
+
+  const urgentWords = ['leak', 'broken', 'dead', 'smoke', 'grinding', 'snapped', 'critically', 'crack', 'sparks', 'stopped', 'overheating', 'pooling', 'rapidly'];
+  const laterWords = ['slight', 'low', 'minor', 'wear', 'dirty', 'slower', 'residue', 'approaching', 'darker', 'corrosion'];
+  const normalWords = ['fine', 'normal', 'good', 'smooth', 'clean', 'passed', 'completed', 'fully', 'no issues', 'no leaks'];
+
+  const isUrgent = urgentWords.some(w => statement.includes(w));
+  const isLater = laterWords.some(w => statement.includes(w));
+  const isNormal = normalWords.some(w => statement.includes(w));
+
+  if (isUrgent) {
+    prediction = 'Urgent Intervention';
+    cls = 'urgent';
+    if (statement.includes('oil') || statement.includes('leak')) action = '🚨 STOP ENGINE! Urgent oil system inspection required.';
+    else if (statement.includes('coolant') || statement.includes('water')) action = '🚨 STOP ENGINE! Urgent cooling system inspection required.';
+    else if (statement.includes('belt')) action = '🚨 STOP ENGINE! Belt replacement required immediately.';
+    else if (statement.includes('battery')) action = '🚨 DO NOT START! Urgent battery replacement required.';
+    else if (statement.includes('smoke')) action = '🚨 STOP ENGINE! Urgent inspection for fire risk.';
+    else action = '🚨 STOP ENGINE! Urgent full inspection required.';
+    priority = '🔴 URGENT INTERVENTION';
+  } else if (isLater && !isNormal) {
+    prediction = 'Intervention Later';
+    cls = 'later';
+    if (statement.includes('oil')) action = '🔧 Schedule oil filter check and top up within 48 hours.';
+    else if (statement.includes('coolant')) action = '🔧 Schedule coolant level check within 48 hours.';
+    else if (statement.includes('belt')) action = '🔧 Schedule belt inspection and tension adjustment.';
+    else if (statement.includes('battery')) action = '🔧 Schedule battery test and terminal cleaning.';
+    else action = '🔧 Schedule general inspection within 48 hours.';
+    priority = '🟡 INTERVENTION LATER';
+  } else {
+    prediction = 'Normal';
+    cls = 'normal';
+    action = '✅ No action required. Log daily check as completed.';
+    priority = '🟢 NORMAL';
+  }
+
+  document.getElementById('anomalyResult').innerHTML = `
+    <div class="result-box ${cls}">
+      <div class="result-title ${cls}">${priority}</div>
+      <div class="result-detail"><strong>Engine:</strong> ${engineId}</div>
+      <div class="result-detail"><strong>Statement:</strong> ${document.getElementById('statement').value}</div>
+      <div class="result-detail"><strong>Action:</strong> ${action}</div>
+    </div>
+  `;
+}
+
+// Enter key support
+document.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    const activePage = document.querySelector('.page.active').id;
+    if (activePage === 'docs') searchDocs();
+    if (activePage === 'anomaly') analyzeStatement();
+  }
+});
+</script>
+</body>
+</html>
