@@ -1,6 +1,6 @@
 #  Hi, I'm Marouane
 
-##  Data Science  | ALX Ambassaor
+##  Data Scientist  | ALX Ambassaor
 
 I'm a data science student passionate about using data to solve real operational problems. I combine SQL, Python, Machine Learning, NLP, and Web Development to turn raw data into actionable insights and real working applications.
 
