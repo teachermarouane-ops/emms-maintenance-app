@@ -13,7 +13,7 @@ I'm a data science student passionate about using data to solve real operational
 
 ---
 
-##  Skills
+## Skills
 - **Languages:** Python, SQL, HTML, CSS, JavaScript
 - **Machine Learning:** Scikit-learn, Random Forest, NLP, TF-IDF
 - **Data Analysis:** Pandas, NumPy, Matplotlib, Seaborn
