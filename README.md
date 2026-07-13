@@ -64,7 +64,7 @@ An NLP-powered system that reads technician daily observations and automatically
 
 ---
 
-### 🔧 Project 1 — Smart Engine Maintenance System
+###  Project 1 — Smart Engine Maintenance System
 A data-driven system to predict and schedule maintenance for a fleet of 44 industrial engines.
 
 -  Built a SQLite database with 10 analytical SQL queries
